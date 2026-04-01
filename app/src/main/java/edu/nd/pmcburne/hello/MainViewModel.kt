@@ -1,41 +1,39 @@
 package edu.nd.pmcburne.hello
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import edu.nd.pmcburne.hello.APIResponseObjects.APIResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-data class MainUIState(
-    val counterValue: Int
-)
 
-class MainViewModel(
-    val initialCounterValue: Int = 0
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(MainUIState(initialCounterValue))
-    val uiState: StateFlow<MainUIState> = _uiState.asStateFlow()
+class MainViewModel(application: Application): ViewModel() {
+    private val dao = GamesDatabase.getDatabase(application.applicationContext).gameDao()
+    private val _currentList: MutableStateFlow<List<Placemark>> = MutableStateFlow(emptyList())
+    val currentList: StateFlow<List<Placemark>> = _currentList.asStateFlow()
 
-    fun incrementCounter() {
-        _uiState.update{ currentState ->
-            currentState.copy(counterValue = _uiState.value.counterValue + 1)
+    init {
+        viewModelScope.launch {
+            _currentList.value = convertResponseToPlacemarks(Requester.api.getPlacemarks())
         }
+
     }
 
-    fun decrementCounter() {
-        _uiState.update{ currentState ->
-            currentState.copy(counterValue = _uiState.value.counterValue - 1)
+    suspend fun convertResponseToPlacemarks(response: APIResponse): List<Placemark> {
+        val list: MutableList<Placemark> = mutableListOf()
+        response.forEach {item ->
+            list.add(Placemark(
+                id = item.id,
+                description = item.description,
+                name = item.name,
+                tagList = item.tag_list,
+                latitude = item.visual_center.latitude,
+                longitude = item.visual_center.longitude
+            ))
         }
+        return list
     }
-
-    fun resetCounter() {
-        _uiState.update { currentState ->
-            currentState.copy(counterValue = 0)
-        }
-    }
-
-    val isDecrementEnabled: Boolean
-        get() = _uiState.value.counterValue > 0
-    val isResetEnabled: Boolean
-        get() = _uiState.value.counterValue > 0
 }
