@@ -4,18 +4,19 @@ import android.content.Context
 import androidx.room.*
 
 @Database(entities = [Placemark::class], version = 1)
-abstract class GamesDatabase: RoomDatabase() {
+@TypeConverters(Converters::class)
+abstract class PlacemarksDatabase: RoomDatabase() {
     abstract fun gameDao(): PlacemarkDAO
 
     companion object {
         @Volatile
-        private var INSTANCE: GamesDatabase? = null
+        private var INSTANCE: PlacemarksDatabase? = null
 
-        fun getDatabase(context: Context): GamesDatabase {
+        fun getDatabase(context: Context): PlacemarksDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    GamesDatabase::class.java,
+                    PlacemarksDatabase::class.java,
                     "game_database"
                 ).build()
                 INSTANCE = instance
